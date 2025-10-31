@@ -1,0 +1,27 @@
+{
+  "name": "glowra-contact-request-api",
+  "version": "1.0.0",
+  "description": "Handles consultation requests and other contact requests",
+  "main": "app.js",
+  "scripts": {
+    "start": "node app.js",
+    "dev": "nodemon app.js"
+  },
+  "keywords": ["api", "consultation", "requests"],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "express": "^4.21.1",
+    "mssql": "^11.0.1",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "axios": "^1.12.2",
+    "node-cron": "^4.2.1",
+    "@sendgrid/mail": "^8.1.4",
+    "express-validator": "^7.2.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.9"
+  }
+}
+
