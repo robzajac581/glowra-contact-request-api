@@ -20,6 +20,7 @@ BEGIN
         [RetryCount] INT NOT NULL DEFAULT 0,
         [LastRetryAt] DATETIME2 NULL,
         [ErrorMessage] NVARCHAR(MAX) NULL,
+        [Environment] NVARCHAR(50) NOT NULL DEFAULT 'production', -- Tracks which environment created the request
         [CreatedAt] DATETIME2 NOT NULL DEFAULT GETUTCDATE()
     );
     
@@ -67,16 +68,28 @@ BEGIN
 END
 GO
 
--- Create composite index for retry query performance (Status + RetryCount + CreatedAt)
-IF NOT EXISTS (SELECT * FROM sys.indexes WHERE name = 'IX_ConsultationRequests_Status_RetryCount_CreatedAt')
+-- Create index on Environment column
+IF NOT EXISTS (SELECT * FROM sys.indexes WHERE name = 'IX_ConsultationRequests_Environment')
 BEGIN
-    CREATE INDEX IX_ConsultationRequests_Status_RetryCount_CreatedAt 
-    ON [dbo].[ConsultationRequests] ([Status], [RetryCount], [CreatedAt]);
-    PRINT 'Created index IX_ConsultationRequests_Status_RetryCount_CreatedAt';
+    CREATE INDEX IX_ConsultationRequests_Environment ON [dbo].[ConsultationRequests] ([Environment]);
+    PRINT 'Created index IX_ConsultationRequests_Environment';
 END
 ELSE
 BEGIN
-    PRINT 'Index IX_ConsultationRequests_Status_RetryCount_CreatedAt already exists';
+    PRINT 'Index IX_ConsultationRequests_Environment already exists';
+END
+GO
+
+-- Create composite index for retry query performance (Environment + Status + RetryCount + CreatedAt)
+IF NOT EXISTS (SELECT * FROM sys.indexes WHERE name = 'IX_ConsultationRequests_Environment_Status_RetryCount_CreatedAt')
+BEGIN
+    CREATE INDEX IX_ConsultationRequests_Environment_Status_RetryCount_CreatedAt 
+    ON [dbo].[ConsultationRequests] ([Environment], [Status], [RetryCount], [CreatedAt]);
+    PRINT 'Created index IX_ConsultationRequests_Environment_Status_RetryCount_CreatedAt';
+END
+ELSE
+BEGIN
+    PRINT 'Index IX_ConsultationRequests_Environment_Status_RetryCount_CreatedAt already exists';
 END
 GO
 
