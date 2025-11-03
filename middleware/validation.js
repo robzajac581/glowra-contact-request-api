@@ -76,6 +76,92 @@ const consultationRequestValidation = [
 ];
 
 /**
+ * Validation rules for clinic listing request
+ */
+const clinicListingRequestValidation = [
+  body('clinicName')
+    .trim()
+    .notEmpty()
+    .withMessage('Clinic name is required')
+    .isLength({ max: 255 })
+    .withMessage('Clinic name must be less than 255 characters'),
+  
+  body('city')
+    .trim()
+    .notEmpty()
+    .withMessage('City is required')
+    .isLength({ max: 255 })
+    .withMessage('City must be less than 255 characters'),
+  
+  body('state')
+    .trim()
+    .notEmpty()
+    .withMessage('State is required')
+    .isLength({ max: 255 })
+    .withMessage('State must be less than 255 characters'),
+  
+  body('address')
+    .trim()
+    .notEmpty()
+    .withMessage('Address is required')
+    .isLength({ max: 500 })
+    .withMessage('Address must be less than 500 characters'),
+  
+  body('website')
+    .optional({ nullable: true })
+    .trim()
+    .isLength({ max: 500 })
+    .withMessage('Website must be less than 500 characters')
+    .isURL()
+    .withMessage('Website must be a valid URL'),
+  
+  body('clinicCategory')
+    .optional({ nullable: true })
+    .trim()
+    .isLength({ max: 255 })
+    .withMessage('Clinic category must be less than 255 characters'),
+  
+  body('primaryContactName')
+    .optional({ nullable: true })
+    .trim()
+    .isLength({ max: 255 })
+    .withMessage('Primary contact name must be less than 255 characters'),
+  
+  body('email')
+    .trim()
+    .notEmpty()
+    .withMessage('Email is required')
+    .isEmail()
+    .withMessage('Invalid email format')
+    .normalizeEmail(),
+  
+  body('phone')
+    .optional({ nullable: true })
+    .trim()
+    .isLength({ max: 50 })
+    .withMessage('Phone must be less than 50 characters'),
+  
+  body('additionalDetails')
+    .optional({ nullable: true })
+    .trim()
+    .isLength({ max: 5000 })
+    .withMessage('Additional details must be less than 5000 characters'),
+  
+  body('message')
+    .optional({ nullable: true })
+    .trim()
+    .isLength({ max: 5000 })
+    .withMessage('Message must be less than 5000 characters'),
+  
+  body('requestType')
+    .trim()
+    .notEmpty()
+    .withMessage('Request type is required')
+    .isIn(['new', 'adjustment'])
+    .withMessage('Request type must be either "new" or "adjustment"')
+];
+
+/**
  * Middleware to handle validation errors
  */
 function handleValidationErrors(req, res, next) {
@@ -103,6 +189,7 @@ function handleValidationErrors(req, res, next) {
 
 module.exports = {
   consultationRequestValidation,
+  clinicListingRequestValidation,
   handleValidationErrors
 };
 

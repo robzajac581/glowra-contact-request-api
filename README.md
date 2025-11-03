@@ -61,7 +61,8 @@ This API receives consultation requests from the frontend, stores them in a data
    
    SENDGRID_API_KEY=your-sendgrid-api-key
    EMAIL_FROM=noreply@glowra.com
-   EMAIL_TO=csrequestforwarding@glowra.com
+   CONSULTATION_REQUEST_EMAIL_TO=csrequestforwarding@glowra.com
+   CLINIC_LISTING_EMAIL_TO=list@glowra.com
    
    PORT=3002
    NODE_ENV=development

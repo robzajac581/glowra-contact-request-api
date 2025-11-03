@@ -3,6 +3,7 @@ const cors = require('cors');
 require('dotenv').config();
 
 const consultationRequestsRoutes = require('./routes/consultationRequests');
+const clinicListingRequestsRoutes = require('./routes/clinicListingRequests');
 const { initializeRetryProcessor } = require('./jobs/retryProcessor');
 const { getPool } = require('./db');
 
@@ -22,6 +23,7 @@ app.use((req, res, next) => {
 
 // Routes
 app.use('/api/consultation-requests', consultationRequestsRoutes);
+app.use('/api/clinic-listing-requests', clinicListingRequestsRoutes);
 
 // Health check endpoint
 app.get('/health', (req, res) => {
