@@ -72,7 +72,25 @@ const consultationRequestValidation = [
   body('selectedProcedures.*.price')
     .optional()
     .isNumeric()
-    .withMessage('Procedure price must be a number')
+    .withMessage('Procedure price must be a number'),
+  
+  body('patientStatus')
+    .optional({ nullable: false })
+    .trim()
+    .notEmpty()
+    .withMessage('Patient status is required')
+    .isIn(['new', 'returning'])
+    .withMessage('Patient status must be either "new" or "returning"')
+    .default('new'),
+  
+  body('procedureType')
+    .optional({ nullable: false })
+    .trim()
+    .notEmpty()
+    .withMessage('Procedure type is required')
+    .isLength({ max: 100 })
+    .withMessage('Procedure type must be less than 100 characters')
+    .default('Not specified')
 ];
 
 /**

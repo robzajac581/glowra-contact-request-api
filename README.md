@@ -93,6 +93,8 @@ Create a new consultation request.
   "email": "john.doe@example.com",
   "phone": "+1234567890",
   "message": "I'm interested in Botox treatments",
+  "patientStatus": "new",
+  "procedureType": "Face",
   "clinicId": "clinic-123",
   "clinicName": "Beautiful Skin Clinic",
   "selectedProcedures": [
@@ -104,6 +106,20 @@ Create a new consultation request.
   ]
 }
 ```
+
+**Required Fields:**
+- `firstName` (string, max 255 chars)
+- `lastName` (string, max 255 chars)
+- `email` (valid email format)
+- `clinicId` (string, max 255 chars)
+- `clinicName` (string, max 255 chars)
+- `patientStatus` (string, either "new" or "returning", defaults to "new")
+- `procedureType` (string, max 100 chars, defaults to "Not specified")
+
+**Optional Fields:**
+- `phone` (string, max 50 chars)
+- `message` (string, max 5000 chars)
+- `selectedProcedures` (array of procedure objects)
 
 **Success Response (200 OK):**
 ```json
@@ -185,6 +201,7 @@ A background worker runs every 5 minutes to process eligible retries. After 5 fa
 Emails sent to `csrequestforwarding@glowra.com` include:
 
 - Contact information (name, email, phone)
+- Request details (patient status, procedure type)
 - Clinic information (ID and name)
 - Selected procedures with prices
 - Total estimate

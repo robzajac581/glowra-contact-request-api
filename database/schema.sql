@@ -16,12 +16,15 @@ BEGIN
         [ClinicId] NVARCHAR(255) NOT NULL,
         [ClinicName] NVARCHAR(255) NOT NULL,
         [SelectedProcedures] NVARCHAR(MAX) NULL, -- JSON stored as text
+        [PatientStatus] NVARCHAR(20) NOT NULL DEFAULT 'new', -- New or returning patient
+        [ProcedureType] NVARCHAR(100) NOT NULL DEFAULT 'Not specified', -- Type of procedure
         [Status] NVARCHAR(50) NOT NULL DEFAULT 'pending',
         [RetryCount] INT NOT NULL DEFAULT 0,
         [LastRetryAt] DATETIME2 NULL,
         [ErrorMessage] NVARCHAR(MAX) NULL,
         [Environment] NVARCHAR(50) NOT NULL DEFAULT 'production', -- Tracks which environment created the request
-        [CreatedAt] DATETIME2 NOT NULL DEFAULT GETUTCDATE()
+        [CreatedAt] DATETIME2 NOT NULL DEFAULT GETUTCDATE(),
+        CONSTRAINT CK_ConsultationRequests_PatientStatus CHECK ([PatientStatus] IN ('new', 'returning'))
     );
     
     PRINT 'ConsultationRequests table created successfully';

@@ -30,10 +30,10 @@ async function createRequest(requestData) {
     const insertQuery = `
       INSERT INTO ConsultationRequests 
       (RequestId, FirstName, LastName, Email, Phone, Message, ClinicId, ClinicName, 
-       SelectedProcedures, Status, RetryCount, Environment, CreatedAt)
+       SelectedProcedures, PatientStatus, ProcedureType, Status, RetryCount, Environment, CreatedAt)
       VALUES 
       (@requestId, @firstName, @lastName, @email, @phone, @message, @clinicId, 
-       @clinicName, @selectedProcedures, @status, @retryCount, @environment, @createdAt)
+       @clinicName, @selectedProcedures, @patientStatus, @procedureType, @status, @retryCount, @environment, @createdAt)
     `;
     
     request.input('requestId', sql.UniqueIdentifier, requestId);
@@ -45,6 +45,8 @@ async function createRequest(requestData) {
     request.input('clinicId', sql.NVarChar, requestData.clinicId);
     request.input('clinicName', sql.NVarChar, requestData.clinicName);
     request.input('selectedProcedures', sql.NVarChar(sql.MAX), selectedProceduresJson);
+    request.input('patientStatus', sql.NVarChar, requestData.patientStatus || 'new');
+    request.input('procedureType', sql.NVarChar, requestData.procedureType || 'Not specified');
     request.input('status', sql.NVarChar, 'pending');
     request.input('retryCount', sql.Int, 0);
     request.input('environment', sql.NVarChar, environment);
@@ -65,6 +67,8 @@ async function createRequest(requestData) {
       clinicId: requestData.clinicId,
       clinicName: requestData.clinicName,
       selectedProcedures: requestData.selectedProcedures || [],
+      patientStatus: requestData.patientStatus || 'new',
+      procedureType: requestData.procedureType || 'Not specified',
       createdAt
     };
     
@@ -230,8 +234,8 @@ async function getRequestById(requestId) {
   
   const selectQuery = `
     SELECT RequestId, FirstName, LastName, Email, Phone, Message, 
-           ClinicId, ClinicName, SelectedProcedures, Status, RetryCount, 
-           LastRetryAt, ErrorMessage, CreatedAt
+           ClinicId, ClinicName, SelectedProcedures, PatientStatus, ProcedureType,
+           Status, RetryCount, LastRetryAt, ErrorMessage, CreatedAt
     FROM ConsultationRequests
     WHERE RequestId = @requestId
   `;
@@ -255,6 +259,8 @@ async function getRequestById(requestId) {
     clinicId: row.ClinicId,
     clinicName: row.ClinicName,
     selectedProcedures: JSON.parse(row.SelectedProcedures || '[]'),
+    patientStatus: row.PatientStatus || 'new',
+    procedureType: row.ProcedureType || 'Not specified',
     status: row.Status,
     retryCount: row.RetryCount,
     lastRetryAt: row.LastRetryAt,
@@ -309,8 +315,8 @@ async function getPendingRetries() {
   // 3. Meet retry eligibility criteria
   const selectQuery = `
     SELECT RequestId, FirstName, LastName, Email, Phone, Message, 
-           ClinicId, ClinicName, SelectedProcedures, Status, RetryCount, 
-           LastRetryAt, ErrorMessage, CreatedAt
+           ClinicId, ClinicName, SelectedProcedures, PatientStatus, ProcedureType,
+           Status, RetryCount, LastRetryAt, ErrorMessage, CreatedAt
     FROM ConsultationRequests
     WHERE Status IN ('pending', 'retrying', 'failed')
       AND Status != 'processing'  -- Exclude requests currently being processed
@@ -355,6 +361,8 @@ async function getPendingRetries() {
     clinicId: row.ClinicId,
     clinicName: row.ClinicName,
     selectedProcedures: JSON.parse(row.SelectedProcedures || '[]'),
+    patientStatus: row.PatientStatus || 'new',
+    procedureType: row.ProcedureType || 'Not specified',
     status: row.Status,
     retryCount: row.RetryCount,
     lastRetryAt: row.LastRetryAt,
