@@ -46,7 +46,7 @@ async function createRequest(requestData) {
     request.input('clinicName', sql.NVarChar, requestData.clinicName);
     request.input('selectedProcedures', sql.NVarChar(sql.MAX), selectedProceduresJson);
     request.input('patientStatus', sql.NVarChar, requestData.patientStatus || 'new');
-    request.input('procedureType', sql.NVarChar, requestData.procedureType || 'Not specified');
+    request.input('procedureType', sql.NVarChar, requestData.procedureType || null);
     request.input('status', sql.NVarChar, 'pending');
     request.input('retryCount', sql.Int, 0);
     request.input('environment', sql.NVarChar, environment);
@@ -68,7 +68,6 @@ async function createRequest(requestData) {
       clinicName: requestData.clinicName,
       selectedProcedures: requestData.selectedProcedures || [],
       patientStatus: requestData.patientStatus || 'new',
-      procedureType: requestData.procedureType || 'Not specified',
       createdAt
     };
     
@@ -260,7 +259,7 @@ async function getRequestById(requestId) {
     clinicName: row.ClinicName,
     selectedProcedures: JSON.parse(row.SelectedProcedures || '[]'),
     patientStatus: row.PatientStatus || 'new',
-    procedureType: row.ProcedureType || 'Not specified',
+    procedureType: row.ProcedureType || null,
     status: row.Status,
     retryCount: row.RetryCount,
     lastRetryAt: row.LastRetryAt,
@@ -362,7 +361,7 @@ async function getPendingRetries() {
     clinicName: row.ClinicName,
     selectedProcedures: JSON.parse(row.SelectedProcedures || '[]'),
     patientStatus: row.PatientStatus || 'new',
-    procedureType: row.ProcedureType || 'Not specified',
+    procedureType: row.ProcedureType || null,
     status: row.Status,
     retryCount: row.RetryCount,
     lastRetryAt: row.LastRetryAt,

@@ -17,7 +17,7 @@ BEGIN
         [ClinicName] NVARCHAR(255) NOT NULL,
         [SelectedProcedures] NVARCHAR(MAX) NULL, -- JSON stored as text
         [PatientStatus] NVARCHAR(20) NOT NULL DEFAULT 'new', -- New or returning patient
-        [ProcedureType] NVARCHAR(100) NOT NULL DEFAULT 'Not specified', -- Type of procedure
+        [ProcedureType] NVARCHAR(100) NULL, -- Type of procedure (deprecated, no longer sent by frontend)
         [Status] NVARCHAR(50) NOT NULL DEFAULT 'pending',
         [RetryCount] INT NOT NULL DEFAULT 0,
         [LastRetryAt] DATETIME2 NULL,

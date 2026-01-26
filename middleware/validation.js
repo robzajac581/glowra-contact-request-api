@@ -81,16 +81,7 @@ const consultationRequestValidation = [
     .withMessage('Patient status is required')
     .isIn(['new', 'returning'])
     .withMessage('Patient status must be either "new" or "returning"')
-    .default('new'),
-  
-  body('procedureType')
-    .optional({ nullable: false })
-    .trim()
-    .notEmpty()
-    .withMessage('Procedure type is required')
-    .isLength({ max: 100 })
-    .withMessage('Procedure type must be less than 100 characters')
-    .default('Not specified')
+    .default('new')
 ];
 
 /**

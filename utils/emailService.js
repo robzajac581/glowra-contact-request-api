@@ -8,7 +8,7 @@ sgMail.setApiKey(process.env.SENDGRID_API_KEY);
  * Format email body according to SLA specification
  */
 function formatEmailBody(request) {
-  const { firstName, lastName, email, phone, message, clinicId, clinicName, selectedProcedures, patientStatus, procedureType } = request;
+  const { firstName, lastName, email, phone, message, clinicId, clinicName, selectedProcedures, patientStatus } = request;
   
   let body = 'A new consultation request has been received:\n\n';
   
@@ -20,7 +20,6 @@ function formatEmailBody(request) {
   
   body += 'REQUEST DETAILS:\n';
   body += `- Patient Status: ${patientStatus === 'new' ? 'New patient' : 'Returning patient'}\n`;
-  body += `- Procedure Type: ${procedureType}\n`;
   body += '\n';
   
   body += 'CLINIC INFORMATION:\n';
