@@ -46,11 +46,6 @@ async function closePool() {
   }
 }
 
-// Initialize pool on module load
-getPool().catch(err => {
-  console.error('Failed to initialize database pool:', err);
-});
-
 module.exports = {
   getPool,
   closePool,

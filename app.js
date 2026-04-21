@@ -9,6 +9,7 @@ const { getPool } = require('./db');
 
 const app = express();
 const PORT = process.env.PORT || 3002;
+const skipDbConnection = process.env.SKIP_DB_CONNECTION === 'true';
 
 // Middleware
 app.use(cors());
@@ -63,11 +64,14 @@ app.use((req, res) => {
 // Initialize database connection and start server
 async function startServer() {
   try {
-    // Initialize database connection pool
-    await getPool();
-    
-    // Initialize retry processor
-    initializeRetryProcessor();
+    if (skipDbConnection) {
+      console.warn('SKIP_DB_CONNECTION=true, starting without database connectivity');
+    } else {
+      // Initialize database connection pool
+      await getPool();
+      // Initialize retry processor
+      initializeRetryProcessor();
+    }
     
     // Start server
     app.listen(PORT, () => {
