@@ -79,6 +79,16 @@ This API receives consultation requests from the frontend, stores them in a data
    npm run dev
    ```
 
+### Running without database access (development fallback)
+
+If your local machine or cloud VM cannot reach the SQL Server (for example, firewall restrictions), you can still boot the API process for environment validation:
+
+```bash
+SKIP_DB_CONNECTION=true npm start
+```
+
+In this mode, the server starts and non-database endpoints like `/` and `/health` work, while database-backed routes will still require a valid database connection.
+
 ## API Endpoints
 
 ### POST `/api/consultation-requests`
