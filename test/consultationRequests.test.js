@@ -76,7 +76,7 @@ describe('POST /api/consultation-requests', () => {
     assert.equal(res.status, 200);
   });
 
-  for (const field of ['firstName', 'lastName', 'email', 'clinicId', 'clinicName']) {
+  for (const field of ['firstName', 'lastName', 'email', 'clinicId']) {
     test(`rejects a missing ${field} with 400 and does not call the service`, async () => {
       const res = await postJson(url, fePayload({ [field]: '' }));
 
@@ -122,22 +122,53 @@ describe('POST /api/consultation-requests', () => {
     assert.doesNotMatch(JSON.stringify(res.body), /secret/);
   });
 
-  // Known gaps (GLO-116). These document current behavior that may lose
-  // bookings; they run but do not fail the build until fixed.
-  test('a selected procedure with no price should still be accepted', {
-    todo: 'currently 400: validation requires a numeric price, FE sends item.price as-is',
-  }, async () => {
+  // GLO-118: payloads the FE can send must not lose the booking.
+  test('accepts a selected procedure with no listed price (null)', async () => {
     const res = await postJson(url, fePayload({
-      selectedProcedures: [{ id: 7, name: 'Consultation', price: null }],
+      selectedProcedures: [
+        { id: 7, name: 'Botox', price: 300 },
+        { id: 8, name: 'Consultation', price: null },
+      ],
     }));
+
     assert.equal(res.status, 200);
+    assert.equal(received.selectedProcedures[0].price, 300);
+    assert.equal(received.selectedProcedures[1].price, null);
   });
 
-  test('a missing clinic name should still be accepted', {
-    todo: 'currently 400: FE sends clinicName null if clinicInfo has not loaded',
-  }, async () => {
-    const res = await postJson(url, fePayload({ clinicName: null }));
-    assert.equal(res.status, 200);
+  test('converts a numeric-string price to a number', async () => {
+    await postJson(url, fePayload({
+      selectedProcedures: [{ id: 7, name: 'Botox', price: '300.50' }],
+    }));
+
+    assert.equal(received.selectedProcedures[0].price, 300.5);
+  });
+
+  test('still rejects a non-numeric price with 400', async () => {
+    const res = await postJson(url, fePayload({
+      selectedProcedures: [{ id: 7, name: 'Botox', price: 'call us' }],
+    }));
+
+    assert.equal(res.status, 400);
+    assert.ok(res.body.details['selectedProcedures[0].price']);
+    assert.equal(received, undefined);
+  });
+
+  for (const clinicName of [null, '', '   ']) {
+    test(`accepts clinicName ${JSON.stringify(clinicName)} and falls back to the clinic id`, async () => {
+      const res = await postJson(url, fePayload({ clinicName }));
+
+      assert.equal(res.status, 200);
+      assert.equal(received.clinicName, 'Unknown clinic (ID 123)');
+    });
+  }
+
+  test('rejects a request with neither clinicName nor clinicId', async () => {
+    const res = await postJson(url, fePayload({ clinicName: null, clinicId: '' }));
+
+    assert.equal(res.status, 400);
+    assert.ok(res.body.details.clinicId);
+    assert.equal(received, undefined);
   });
 });
 

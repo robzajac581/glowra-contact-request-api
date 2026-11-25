@@ -44,8 +44,19 @@ const consultationRequestValidation = [
     .withMessage('Clinic ID is required')
     .isLength({ max: 255 })
     .withMessage('Clinic ID must be less than 255 characters'),
-  
+
+  // The FE sends clinicName null when clinic info hasn't loaded yet (GLO-118).
+  // Don't lose the booking: fall back to a name built from clinicId
+  // (ClinicName is NOT NULL in the DB, and the email subject uses it).
   body('clinicName')
+    .customSanitizer((value, { req }) => {
+      const name = typeof value === 'string' ? value.trim() : value;
+      if (name) return name;
+      const id = req.body.clinicId;
+      return id !== undefined && id !== null && String(id).trim() !== ''
+        ? `Unknown clinic (ID ${String(id).trim()})`
+        : value;
+    })
     .trim()
     .notEmpty()
     .withMessage('Clinic name is required')
@@ -69,10 +80,13 @@ const consultationRequestValidation = [
     .isLength({ max: 255 })
     .withMessage('Procedure name must be less than 255 characters'),
   
+  // null = the clinic lists no price for this procedure; accept it (GLO-118).
+  // Numeric strings ("300") are converted to numbers.
   body('selectedProcedures.*.price')
-    .optional()
+    .optional({ nullable: true })
     .isNumeric()
-    .withMessage('Procedure price must be a number'),
+    .withMessage('Procedure price must be a number')
+    .toFloat(),
   
   body('patientStatus')
     .optional({ nullable: false })
