@@ -1,0 +1,186 @@
+// Route tests for /api/consultation-requests: the booking path.
+// DB, SendGrid and the service layer are faked (see helpers/loadApp.js).
+
+const { test, describe, before, after, beforeEach } = require('node:test');
+const assert = require('node:assert/strict');
+const { loadApp, startServer, postJson } = require('./helpers/loadApp');
+
+// Same shape glowra-FE sends (src/components/ConsultationRequestForm.jsx).
+function fePayload(overrides = {}) {
+  return {
+    firstName: 'Ana',
+    lastName: 'Lee',
+    email: 'Ana.Lee@Example.com',
+    phone: null,
+    message: null,
+    patientStatus: 'new',
+    clinicId: 123,
+    clinicName: 'Test Clinic',
+    selectedProcedures: [{ id: 7, name: 'Botox', price: 300 }],
+    ...overrides,
+  };
+}
+
+describe('POST /api/consultation-requests', () => {
+  let ctx;
+  let server;
+  let url;
+  let received;
+
+  before(async () => {
+    ctx = loadApp();
+    server = await startServer(ctx.app);
+    url = `${server.url}/api/consultation-requests`;
+  });
+
+  after(async () => {
+    await server.close();
+  });
+
+  beforeEach(() => {
+    received = undefined;
+    ctx.consultationService.createRequest = async (body) => {
+      received = body;
+      return { requestId: '11111111-1111-4111-8111-111111111111' };
+    };
+  });
+
+  test('accepts the payload the FE sends and returns the request id', async () => {
+    const res = await postJson(url, fePayload());
+
+    assert.equal(res.status, 200);
+    assert.equal(res.body.success, true);
+    assert.equal(res.body.requestId, '11111111-1111-4111-8111-111111111111');
+    assert.ok(received, 'service should be called');
+    assert.equal(received.firstName, 'Ana');
+    assert.equal(received.clinicName, 'Test Clinic');
+  });
+
+  test('passes numeric FE ids to the service as strings', async () => {
+    await postJson(url, fePayload());
+
+    assert.equal(received.clinicId, '123');
+    assert.equal(received.selectedProcedures[0].id, '7');
+    assert.equal(received.selectedProcedures[0].price, 300);
+  });
+
+  test('normalizes the email address', async () => {
+    await postJson(url, fePayload());
+
+    assert.equal(received.email, 'ana.lee@example.com');
+  });
+
+  test('accepts a request with no procedures selected', async () => {
+    const res = await postJson(url, fePayload({ selectedProcedures: [] }));
+
+    assert.equal(res.status, 200);
+  });
+
+  for (const field of ['firstName', 'lastName', 'email', 'clinicId', 'clinicName']) {
+    test(`rejects a missing ${field} with 400 and does not call the service`, async () => {
+      const res = await postJson(url, fePayload({ [field]: '' }));
+
+      assert.equal(res.status, 400);
+      assert.equal(res.body.success, false);
+      assert.equal(res.body.error, 'Validation failed');
+      assert.ok(res.body.details[field], `details should name ${field}`);
+      assert.equal(received, undefined);
+    });
+  }
+
+  test('rejects an invalid email with 400', async () => {
+    const res = await postJson(url, fePayload({ email: 'not-an-email' }));
+
+    assert.equal(res.status, 400);
+    assert.equal(res.body.details.email, 'Invalid email format');
+  });
+
+  test('rejects an unknown patientStatus with 400', async () => {
+    const res = await postJson(url, fePayload({ patientStatus: 'vip' }));
+
+    assert.equal(res.status, 400);
+    assert.ok(res.body.details.patientStatus);
+  });
+
+  test('rejects a message over 5000 characters with 400', async () => {
+    const res = await postJson(url, fePayload({ message: 'x'.repeat(5001) }));
+
+    assert.equal(res.status, 400);
+    assert.ok(res.body.details.message);
+  });
+
+  test('returns 500 without internal details when the service fails', async () => {
+    ctx.consultationService.createRequest = async () => {
+      throw new Error('db exploded: secret connection string');
+    };
+
+    const res = await postJson(url, fePayload());
+
+    assert.equal(res.status, 500);
+    assert.equal(res.body.success, false);
+    assert.equal(res.body.error, 'Internal server error');
+    assert.doesNotMatch(JSON.stringify(res.body), /secret/);
+  });
+
+  // Known gaps (GLO-116). These document current behavior that may lose
+  // bookings; they run but do not fail the build until fixed.
+  test('a selected procedure with no price should still be accepted', {
+    todo: 'currently 400: validation requires a numeric price, FE sends item.price as-is',
+  }, async () => {
+    const res = await postJson(url, fePayload({
+      selectedProcedures: [{ id: 7, name: 'Consultation', price: null }],
+    }));
+    assert.equal(res.status, 200);
+  });
+
+  test('a missing clinic name should still be accepted', {
+    todo: 'currently 400: FE sends clinicName null if clinicInfo has not loaded',
+  }, async () => {
+    const res = await postJson(url, fePayload({ clinicName: null }));
+    assert.equal(res.status, 200);
+  });
+});
+
+describe('POST /api/consultation-requests/:requestId/reprocess', () => {
+  const id = '33333333-3333-4333-8333-333333333333';
+  let ctx;
+  let server;
+
+  before(async () => {
+    ctx = loadApp();
+    server = await startServer(ctx.app);
+  });
+
+  after(async () => {
+    await server.close();
+  });
+
+  test('rejects a non-UUID id with 400', async () => {
+    const res = await postJson(`${server.url}/api/consultation-requests/abc/reprocess`, {});
+
+    assert.equal(res.status, 400);
+  });
+
+  test('returns 404 for an unknown request', async () => {
+    ctx.consultationService.getRequestById = async () => null;
+
+    const res = await postJson(`${server.url}/api/consultation-requests/${id}/reprocess`, {});
+
+    assert.equal(res.status, 404);
+  });
+
+  test('queues a known request and re-sends its email', async () => {
+    let reprocessed;
+    let emailed;
+    ctx.consultationService.getRequestById = async () => ({ requestId: id, firstName: 'Ana' });
+    ctx.consultationService.reprocessRequest = async (rid) => { reprocessed = rid; };
+    ctx.consultationService.sendEmail = async (rid) => { emailed = rid; };
+
+    const res = await postJson(`${server.url}/api/consultation-requests/${id}/reprocess`, {});
+
+    assert.equal(res.status, 200);
+    assert.equal(res.body.status, 'retrying');
+    assert.equal(reprocessed, id);
+    assert.equal(emailed, id);
+  });
+});

@@ -29,8 +29,11 @@ Changing a request body shape or response contract requires a coordinated `glowr
 - Start server: `npm start` (listens on `PORT`, default 3002)
 - Start with reload: `npm run dev` (nodemon)
 
-There is no test script in this repo — verify changes by exercising the endpoints against a
-locally running server.
+- Run tests: `npm test` (`node --test`; route tests with the DB, SendGrid and services faked in
+  `test/helpers/loadApp.js`, so no `.env` or network is needed). CI runs them on every push to
+  `main` and every PR (`.github/workflows/test.yml`).
+
+`app.js` only starts the server when run directly; requiring it just returns the Express `app`.
 
 ## Setup
 
