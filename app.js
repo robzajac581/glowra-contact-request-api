@@ -80,20 +80,27 @@ async function startServer() {
   }
 }
 
-// Handle graceful shutdown
-process.on('SIGTERM', async () => {
-  console.log('SIGTERM received, shutting down gracefully...');
-  const { closePool } = require('./db');
-  await closePool();
-  process.exit(0);
-});
+// Only start the server (DB pool, retry job, listen) when run directly
+// (`node app.js` / `npm start`). Tests require this file to get `app`
+// without connecting to the database or starting the cron job.
+if (require.main === module) {
+  // Handle graceful shutdown
+  process.on('SIGTERM', async () => {
+    console.log('SIGTERM received, shutting down gracefully...');
+    const { closePool } = require('./db');
+    await closePool();
+    process.exit(0);
+  });
 
-process.on('SIGINT', async () => {
-  console.log('SIGINT received, shutting down gracefully...');
-  const { closePool } = require('./db');
-  await closePool();
-  process.exit(0);
-});
+  process.on('SIGINT', async () => {
+    console.log('SIGINT received, shutting down gracefully...');
+    const { closePool } = require('./db');
+    await closePool();
+    process.exit(0);
+  });
 
-startServer();
+  startServer();
+}
+
+module.exports = app;
 
