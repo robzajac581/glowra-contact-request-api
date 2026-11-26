@@ -146,6 +146,8 @@ Create a new consultation request.
 
 Manually reprocess a failed or pending request.
 
+**Auth:** requires header `X-API-Key: <CONTACT_ADMIN_API_KEY>`. Missing or wrong key returns 401; if the server has no key configured it returns 503.
+
 **Success Response (200 OK):**
 ```json
 {

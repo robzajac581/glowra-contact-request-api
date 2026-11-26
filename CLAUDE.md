@@ -51,7 +51,8 @@ cannot be established.
 - `utils/emailService.js` — all SendGrid sending; recipient addresses come from env with
   hardcoded fallbacks
 - `jobs/retryProcessor.js` — `node-cron` job that retries failed email sends
-- `middleware/` — request validation (`express-validator`)
+- `middleware/` — request validation (`express-validator`); `adminAuth.js` requires `X-API-Key`
+  = `CONTACT_ADMIN_API_KEY` on `/reprocess` (fails closed with 503 if unset)
 - `db.js` — singleton connection pool, initialized on module load; use `getPool()`
 - `database/` — schema and migration SQL
 

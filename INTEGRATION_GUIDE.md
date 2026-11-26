@@ -76,6 +76,8 @@ Content-Type: application/json
 
 Use this if you need to manually retry a failed request.
 
+**Auth:** requires header `X-API-Key: <CONTACT_ADMIN_API_KEY>`. Missing or wrong key returns 401; if the server has no key configured it returns 503.
+
 **Request:**
 ```
 POST /api/consultation-requests/52056483-d93d-41cf-be8b-0739a536e00c/reprocess

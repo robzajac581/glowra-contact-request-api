@@ -77,10 +77,10 @@ async function startServer(app) {
   });
 }
 
-async function postJson(url, body) {
+async function postJson(url, body, headers = {}) {
   const res = await fetch(url, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', ...headers },
     body: JSON.stringify(body),
   });
   return { status: res.status, body: await res.json() };

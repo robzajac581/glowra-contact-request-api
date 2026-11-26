@@ -174,20 +174,77 @@ describe('POST /api/consultation-requests', () => {
 
 describe('POST /api/consultation-requests/:requestId/reprocess', () => {
   const id = '33333333-3333-4333-8333-333333333333';
+  const KEY = 'test-admin-key';
+  const auth = { 'X-API-Key': KEY };
   let ctx;
   let server;
+  let savedKey;
+  let reprocessed;
+  let emailed;
+  const reprocessUrl = (rid = id) => `${server.url}/api/consultation-requests/${rid}/reprocess`;
 
   before(async () => {
+    savedKey = process.env.CONTACT_ADMIN_API_KEY;
     ctx = loadApp();
     server = await startServer(ctx.app);
   });
 
   after(async () => {
     await server.close();
+    if (savedKey === undefined) delete process.env.CONTACT_ADMIN_API_KEY;
+    else process.env.CONTACT_ADMIN_API_KEY = savedKey;
+  });
+
+  beforeEach(() => {
+    process.env.CONTACT_ADMIN_API_KEY = KEY;
+    reprocessed = undefined;
+    emailed = undefined;
+    ctx.consultationService.getRequestById = async () => ({ requestId: id, firstName: 'Ana' });
+    ctx.consultationService.reprocessRequest = async (rid) => { reprocessed = rid; };
+    ctx.consultationService.sendEmail = async (rid) => { emailed = rid; };
+  });
+
+  // GLO-119: the endpoint re-sends email, so it needs the admin key.
+  test('rejects a request with no API key with 401 and sends nothing', async () => {
+    const res = await postJson(reprocessUrl(), {});
+
+    assert.equal(res.status, 401);
+    assert.equal(res.body.success, false);
+    assert.equal(reprocessed, undefined);
+    assert.equal(emailed, undefined);
+  });
+
+  test('rejects a wrong API key with 401 and sends nothing', async () => {
+    const res = await postJson(reprocessUrl(), {}, { 'X-API-Key': 'wrong-key' });
+
+    assert.equal(res.status, 401);
+    assert.equal(reprocessed, undefined);
+    assert.equal(emailed, undefined);
+  });
+
+  test('refuses every request with 503 when CONTACT_ADMIN_API_KEY is unset', async () => {
+    delete process.env.CONTACT_ADMIN_API_KEY;
+
+    for (const headers of [{}, auth, { 'X-API-Key': '' }]) {
+      const res = await postJson(reprocessUrl(), {}, headers);
+      assert.equal(res.status, 503);
+      assert.doesNotMatch(JSON.stringify(res.body), /CONTACT_ADMIN_API_KEY/);
+    }
+    assert.equal(reprocessed, undefined);
+    assert.equal(emailed, undefined);
+  });
+
+  test('refuses with 503 when CONTACT_ADMIN_API_KEY is empty', async () => {
+    process.env.CONTACT_ADMIN_API_KEY = '';
+
+    const res = await postJson(reprocessUrl(), {}, { 'X-API-Key': '' });
+
+    assert.equal(res.status, 503);
+    assert.equal(emailed, undefined);
   });
 
   test('rejects a non-UUID id with 400', async () => {
-    const res = await postJson(`${server.url}/api/consultation-requests/abc/reprocess`, {});
+    const res = await postJson(reprocessUrl('abc'), {}, auth);
 
     assert.equal(res.status, 400);
   });
@@ -195,23 +252,23 @@ describe('POST /api/consultation-requests/:requestId/reprocess', () => {
   test('returns 404 for an unknown request', async () => {
     ctx.consultationService.getRequestById = async () => null;
 
-    const res = await postJson(`${server.url}/api/consultation-requests/${id}/reprocess`, {});
+    const res = await postJson(reprocessUrl(), {}, auth);
 
     assert.equal(res.status, 404);
   });
 
   test('queues a known request and re-sends its email', async () => {
-    let reprocessed;
-    let emailed;
-    ctx.consultationService.getRequestById = async () => ({ requestId: id, firstName: 'Ana' });
-    ctx.consultationService.reprocessRequest = async (rid) => { reprocessed = rid; };
-    ctx.consultationService.sendEmail = async (rid) => { emailed = rid; };
-
-    const res = await postJson(`${server.url}/api/consultation-requests/${id}/reprocess`, {});
+    const res = await postJson(reprocessUrl(), {}, auth);
 
     assert.equal(res.status, 200);
     assert.equal(res.body.status, 'retrying');
     assert.equal(reprocessed, id);
     assert.equal(emailed, id);
+  });
+
+  test('does not require a key on the public booking form (POST /)', async () => {
+    const res = await postJson(`${server.url}/api/consultation-requests`, fePayload());
+
+    assert.equal(res.status, 200);
   });
 });

@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const consultationRequestService = require('../services/consultationRequestService');
 const { consultationRequestValidation, handleValidationErrors } = require('../middleware/validation');
+const { requireAdminApiKey } = require('../middleware/adminAuth');
 
 /**
  * POST /api/consultation-requests
@@ -32,9 +33,10 @@ router.post('/', consultationRequestValidation, handleValidationErrors, async (r
 
 /**
  * POST /api/consultation-requests/:requestId/reprocess
- * Manually reprocess a failed or pending request
+ * Manually reprocess a failed or pending request.
+ * Requires the X-API-Key header (CONTACT_ADMIN_API_KEY); re-sends the email.
  */
-router.post('/:requestId/reprocess', async (req, res) => {
+router.post('/:requestId/reprocess', requireAdminApiKey, async (req, res) => {
   try {
     const { requestId } = req.params;
     
