@@ -167,6 +167,8 @@ Submitted: 2025-01-15 14:30:00 UTC
 
 **Purpose**: Manually trigger reprocessing of a failed or pending request.
 
+**Auth:** requires header `X-API-Key: <CONTACT_ADMIN_API_KEY>`. Missing or wrong key returns 401; if the server has no key configured it returns 503.
+
 **Request:**
 ```
 POST /api/consultation-requests/req-abc123xyz/reprocess
