@@ -30,12 +30,24 @@ function formatEmailBody(request) {
   if (selectedProcedures && selectedProcedures.length > 0) {
     body += 'SELECTED PROCEDURES:\n';
     let total = 0;
+    let unpriced = 0;
     selectedProcedures.forEach((proc, index) => {
-      const price = proc.price || 0;
-      total += price;
-      body += `${index + 1}. ${proc.name} - $${price.toFixed(2)}\n`;
+      // price can be null (no listed price) or a numeric string from older rows
+      const hasPrice = proc.price !== null && proc.price !== undefined && proc.price !== '' && Number.isFinite(Number(proc.price));
+      if (hasPrice) {
+        const price = Number(proc.price);
+        total += price;
+        body += `${index + 1}. ${proc.name} - $${price.toFixed(2)}\n`;
+      } else {
+        unpriced += 1;
+        body += `${index + 1}. ${proc.name} - price not listed\n`;
+      }
     });
-    body += `\nTotal Estimate: $${total.toFixed(2)}\n`;
+    body += `\nTotal Estimate: $${total.toFixed(2)}`;
+    if (unpriced > 0) {
+      body += ` (excludes ${unpriced} procedure${unpriced === 1 ? '' : 's'} with no listed price)`;
+    }
+    body += '\n';
     body += '\n';
   }
   
